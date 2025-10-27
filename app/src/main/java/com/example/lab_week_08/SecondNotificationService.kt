@@ -1,7 +1,6 @@
 package com.example.lab_week_08
 
 import android.app.*
-import android.content.Context
 import android.content.Intent
 import android.os.*
 import androidx.core.app.NotificationCompat
@@ -9,7 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 
-class NotificationService : Service() {
+class SecondNotificationService : Service() {
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private lateinit var serviceHandler: Handler
@@ -18,10 +17,9 @@ class NotificationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-
         notificationBuilder = startForegroundService()
 
-        val handlerThread = HandlerThread("SecondThread").apply { start() }
+        val handlerThread = HandlerThread("SecondNotificationThread").apply { start() }
         serviceHandler = Handler(handlerThread.looper)
     }
 
@@ -39,17 +37,14 @@ class NotificationService : Service() {
             PendingIntent.FLAG_IMMUTABLE else 0
 
         return PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            flag
+            this, 0, Intent(this, MainActivity::class.java), flag
         )
     }
 
     private fun createNotificationChannel(): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "001"
-            val channelName = "001 Channel"
+            val channelId = "002"
+            val channelName = "002 Channel"
             val channelPriority = NotificationManager.IMPORTANCE_DEFAULT
 
             val channel = NotificationChannel(channelId, channelName, channelPriority)
@@ -58,26 +53,25 @@ class NotificationService : Service() {
             )
             manager.createNotificationChannel(channel)
             channelId
-        } else {
-            ""
-        }
+        } else ""
     }
 
     private fun getNotificationBuilder(pendingIntent: PendingIntent, channelId: String) =
         NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Second worker process is done")
-            .setContentText("Check it out!")
+            .setContentTitle("Third worker process is done")
+            .setContentText("Second Notification running!")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
-            .setTicker("Second worker process is done, check it out!")
+            .setTicker("Third worker done! Second notification starts!")
             .setOngoing(true)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val returnValue = super.onStartCommand(intent, flags, startId)
-        val Id = intent?.getStringExtra(EXTRA_ID) ?: "001"
+        val Id = intent?.getStringExtra(EXTRA_ID)
+            ?: throw IllegalStateException("Channel ID must be provided")
 
         serviceHandler.post {
-            countDownFromTenToZero(notificationBuilder)
+            countDownFromFiveToZero(notificationBuilder)
             notifyCompletion(Id)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
@@ -85,12 +79,12 @@ class NotificationService : Service() {
         return returnValue
     }
 
-    private fun countDownFromTenToZero(notificationBuilder: NotificationCompat.Builder) {
+    private fun countDownFromFiveToZero(notificationBuilder: NotificationCompat.Builder) {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        for (i in 10 downTo 0) {
+        for (i in 5 downTo 0) {
             Thread.sleep(1000L)
             notificationBuilder
-                .setContentText("$i seconds until last warning")
+                .setContentText("$i seconds until finish")
                 .setSilent(true)
             notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
         }
@@ -103,7 +97,7 @@ class NotificationService : Service() {
     }
 
     companion object {
-        const val NOTIFICATION_ID = 0xCA7
+        const val NOTIFICATION_ID = 0xCA8
         const val EXTRA_ID = "Id"
         private val mutableID = MutableLiveData<String>()
         val trackingCompletion: LiveData<String> = mutableID
