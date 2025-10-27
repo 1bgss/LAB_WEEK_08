@@ -5,23 +5,17 @@ import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 
-class FirstWorker(
+class SecondWorker(
     context: Context,
     workerParams: WorkerParameters
 ) : Worker(context, workerParams) {
 
     override fun doWork(): Result {
-
         val id = inputData.getString(INPUT_DATA_ID)
-
-
         Thread.sleep(3000L)
-
-
         val outputData = Data.Builder()
             .putString(OUTPUT_DATA_ID, id)
             .build()
-
 
         return Result.success(outputData)
     }
